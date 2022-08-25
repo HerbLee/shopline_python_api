@@ -61,7 +61,21 @@ class Session(object):
             query_params["responseType"] = responseType
         return "https://%s/admin/oauth-web/#/oauth/authorize?%s" % (self.url, urllib.parse.urlencode(query_params))
 
+
+    def get_by_net(self, url, data):
+        timestamp = authorize.get_timestamp()
+        # get post sign
+        sign = authorize.get_sign(self.secret, timestamp, **data)
+        headers = dict(appkey=self.api_key, sign=sign, timestamp=timestamp)
+        headers["Content-Type"] = "application/json"
+
+        request = urllib.request.Request(url, headers=headers, data=authorize.parse_json_data(**data), method="POST")
+        response = urllib.request.urlopen(request)
+        return response
+
+
     def request_token(self, params):
+        """request token"""
         if self.token:
             return self.token
 
@@ -73,23 +87,74 @@ class Session(object):
         url = "https://%s/admin/oauth/token/create" % self.url
 
         data = dict(code=code)
-        timestamp = authorize.get_timestamp()
-        # get post sign
-        sign = authorize.get_sign(self.secret, timestamp, **data)
-        headers = dict(appkey=self.api_key, sign=sign, timestamp=timestamp)
-        headers["Content-Type"] = "application/json"
 
-        request = urllib.request.Request(url, headers=headers, data=authorize.parse_json_data(**data), method="POST")
-        response = urllib.request.urlopen(request)
+        response = self.get_by_net(url, data)
 
         if response.code == 200:
             json_payload = json.loads(response.read().decode("utf-8"))
-            data = json_payload.get("data", {})
-            self.token = data["accessToken"]
-            self.access_scopes = data["scope"]
-            return self.token
+            if json_payload.get("code") == 200:
+                data = json_payload.get("data", {})
+                # print(json_payload)
+                self.token = data["accessToken"]
+                self.access_scopes = data["scope"]
+                return self.token
+            else:
+                raise Exception("{}:{}".format(json_payload.get("i18nCode"), json_payload.get("message")))
         else:
             raise Exception(response.msg)
+
+    def refresh_token(self):
+        """refresh token"""
+
+        url = "https://%s/admin/oauth/token/refresh" % self.url
+        data = dict()
+        response = self.get_by_net(url, data)
+        if response.code == 200:
+            json_payload = json.loads(response.read().decode("utf-8"))
+            if json_payload.get("code") == 200:
+                data = json_payload.get("data", {})
+                # print(json_payload)
+                self.token = data["accessToken"]
+                self.access_scopes = data["scope"]
+                return self.token
+            else:
+                raise Exception("{}:{}".format(json_payload.get("i18nCode"), json_payload.get("message")))
+        else:
+            raise Exception(response.msg)
+
+
+    def cancel(self):
+        """
+        cancel shop bind
+        :return:
+        """
+        url = "https://%s/admin/oauth/authorize/cancel" % self.url
+        data = dict()
+        response = self.get_by_net(url, data)
+        if response.code == 200:
+            json_payload = json.loads(response.read().decode("utf-8"))
+            if json_payload.get("code") == 200:
+                data = json_payload.get("data", {})
+                # print(json_payload)
+                self.token = data["accessToken"]
+                self.access_scopes = data["scope"]
+                return self.token
+            else:
+                raise Exception("{}:{}".format(json_payload.get("i18nCode"), json_payload.get("message")))
+        else:
+            raise Exception(response.msg)
+
+
+    @classmethod
+    def validate_token(cls, params):
+        ten_minutes = 36000
+        if int(params.get("timestamp", 0)) < time.time() - ten_minutes:
+            return False
+
+        return True
+
+
+
 
     @property
     def api_version(self):
@@ -136,7 +201,7 @@ class Session(object):
     def validate_params(cls, params):
         # Avoid replay attacks by making sure the request
         # isn't more than 10 minutes old.
-        ten_minutes = 10 * 60
+        ten_minutes = 600
         if int(params.get("timestamp", 0)) < time.time() - ten_minutes:
             return False
 

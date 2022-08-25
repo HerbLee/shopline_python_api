@@ -30,6 +30,9 @@ def parse_get_url(**param):
 
 
 def parse_body(**data):
+    if data is None or len(data) == 0:
+        return ""
+
     ps = ",".join(['"{}":"{}"'.format(k, v) for k, v in data.items()])
     return "{" + ps + "}"
 
