@@ -1,2 +1,10 @@
 # shopline_python_api
-The ShopLine library allows python developers to programmatically access the admin section of stores using an ActiveResource like interface similar the ruby ShopLine API gem. 
+
+```shell
+# 安装方式
+pip install ShopLineAPI
+# 或
+
+pip install ShopLineAPI -i https://www.pypi.org/simple/
+
+```
