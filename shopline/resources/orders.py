@@ -4,6 +4,7 @@ from ..collection import Collection, PaginatedCollection
 
 
 class Orders(ShopLineResource):
+    """orders """
     # 弃单
     ABANDONED_ORDERS = "/abandoned_orders"
 

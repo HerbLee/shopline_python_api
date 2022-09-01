@@ -1,15 +1,5 @@
-# import pyactiveresource.connection
-# from pyactiveresource.activeresource import ActiveResource, ResourceMeta, formats
-from contextlib import contextmanager
-
-import shopline.yamlobjects
 import shopline.mixins as mixins
-import shopline
 import threading
-import sys
-from six.moves import urllib
-import six
-from .utils import utils as util
 from .connection import Connection
 from shopline.collection import PaginatedCollection
 from .utils.formats import JSONFormat
@@ -17,12 +7,11 @@ from .collection import Collection
 
 
 class ShopLineResource(mixins.CountMixins):
-    # _format = formats.JSONFormat
     _threadlocal = threading.local()
     _headers = {}
     _version = None
     _url = None
-    page_size = 1
+    page_size = 50
     connect = Connection()
     format = JSONFormat()
 
@@ -32,6 +21,8 @@ class ShopLineResource(mixins.CountMixins):
     @classmethod
     def get_base_url(cls, details, **kwargs):
         item = cls.__dict__.get("__module__").rsplit(".")[-1]
+        if kwargs.get("item") is not None:
+            item = kwargs.get("item")
         if kwargs.get("page"):
             url = "https://{url}{version}/{item}{detail}.json?limit={pagesize}".format(url=cls._url, version=cls._version._path, item=item, detail=details, pagesize=kwargs.get("page"))
         else:
@@ -77,9 +68,13 @@ class ShopLineResource(mixins.CountMixins):
         if not from_:
             return None
         url = from_
+        print(url)
         prefix_options = {}
         response = cls.connect.get(url, cls.get_headers())
         objs = cls.format.decode(response.body)
+        print(objs)
+        if not objs:
+            return objs
         collection = cls._build_collection(objs, prefix_options, response.headers)
         if isinstance(collection, Collection) and "headers" in collection.metadata:
             return PaginatedCollection(collection, metadata={"resource_class": cls}, **kwargs)

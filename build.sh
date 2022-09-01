@@ -4,4 +4,6 @@
 
 # python setup.py sdist
 
+# twine upload dist/*
+
 # pip install ShopLineAPI -i https://www.pypi.org/simple/
