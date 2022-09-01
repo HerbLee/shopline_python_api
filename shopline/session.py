@@ -37,15 +37,15 @@ class Session(object):
     def temp(cls, domain, version, token):
         import shopline
 
-        # original_domain = shopify.ShopifyResource.url
-        # original_token = shopify.ShopifyResource.get_headers().get("X-Shopify-Access-Token")
-        # original_version = shopify.ShopifyResource.get_version() or version
-        # original_session = shopify.Session(original_domain, original_version, original_token)
-        #
-        # session = Session(domain, version, token)
-        # shopify.ShopifyResource.activate_session(session)
-        # yield
-        # shopify.ShopifyResource.activate_session(original_session)
+        original_domain = shopline.ShopLineResource.get_url()
+        original_token = shopline.ShopLineResource.get_headers().get("Authorization")
+        original_version = shopline.ShopLineResource.get_version() or version
+        original_session = shopline.Session(original_domain, original_version, original_token)
+
+        session = Session(domain, version, token)
+        shopline.ShopLineResource.activate_session(session)
+        yield
+        shopline.ShopLineResource.activate_session(original_session)
 
     def __init__(self, handle, version=None, token=None, access_scopes=None):
         self.url = self.__prepare_url(handle)
